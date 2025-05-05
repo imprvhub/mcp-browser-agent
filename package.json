@@ -1,0 +1,55 @@
+{
+  "name": "mcp-browser-agent",
+  "version": "0.1.0",
+  "author":{
+    "name": "Iván Luna",
+    "email": "contact@ivanluna.dev",
+    "url": "https://github.com/imprvhub"
+  },
+  "description": "A Model Context Protocol (MCP) integration that provides Claude Desktop with autonomous browser automation capabilities.",
+  "type": "module",
+  "bin": {
+    "mcp-browser-agent": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/*.js",
+    "start": "npm run build && node dist/index.js",
+    "start:chrome": "npm run build && node dist/index.js --browser chrome",
+    "start:firefox": "npm run build && node dist/index.js --browser firefox",
+    "start:webkit": "npm run build && node dist/index.js --browser webkit",
+    "start:edge": "npm run build && node dist/index.js --browser edge",
+    "watch": "tsc --watch",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.0.3",
+    "@playwright/browser-chromium": "1.49.1",
+    "@playwright/browser-firefox": "1.49.1",
+    "@playwright/browser-webkit": "1.49.1",
+    "playwright": "1.49.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.10.5",
+    "@types/sinon": "^17.0.4",
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "shx": "^0.3.4",
+    "sinon": "^17.0.1",
+    "ts-jest": "^29.3.2",
+    "typescript": "^5.6.2"
+  },
+  "keywords": [
+    "playwright",
+    "browser-automation",
+    "api-client",
+    "model-context-protocol",
+    "mcp"
+  ],
+  "license": "Mozilla Public License Version 2.0"
+}
