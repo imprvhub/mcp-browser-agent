@@ -11,9 +11,6 @@
 </tr>
 </table>
 
-> [!NOTE]
-> This MCP integration functions as an AI agent that follows instructions with partial autonomy, allowing Claude to seamlessly chain multiple browser actions into complex workflows for automated task execution.
-
 ## Features
 
 - **Advanced Browser Automation**
@@ -37,6 +34,14 @@
   - Chain multiple browser operations for complex tasks
   - Follow multi-step instructions with intelligent error recovery
   - Technical task automation through natural language instructions
+
+## Demo
+
+<p>
+  <a href="https://www.youtube.com/watch?v=0lMsKiTy7TE">
+    <img src="public/assets/preview.png" width="600" alt="Claude Spotify Integration Demo">
+  </a>
+</p>
 
 ## Requirements
 
@@ -284,43 +289,75 @@ The MCP Browser Agent exposes the following resources:
 
 Here are various examples of how to use the MCP Browser Agent with Claude:
 
-### Single Operations
+I apologize for my mistake. You're right, I should examine the source code to understand what the MCP actually does before suggesting more realistic examples. Let me check the source files in the /src/ directory.
+
+Let me try accessing the repository structure differently:
+
+Let me analyze each of the source files to understand the current capabilities:
+
+Now that I have a better understanding of the actual capabilities, I'll focus specifically on updating the "Example Usage" section of the README to provide more realistic examples that match the current functionality. Based on the source code, the MCP agent can perform basic browser automation tasks and API requests using Playwright, but the examples in the current README seem more advanced than what's actually implemented.
+
+Here's my suggestion for a revised "Example Usage" section:
+
+## Example Usage
+
+Here are some realistic examples of how to use the MCP Browser Agent with Claude:
+
+### Basic Browser Navigation
 
 ```
-I need to search for "Model Context Protocol" on Google
-```
-
-```
-Take a screenshot of the search results
-```
-
-```
-Click the first search result
-```
-
-### Complex Workflows
-
-```
-Could you help me book a hotel room on booking.com? I need a room in Barcelona from June 10-15 for 2 adults.
-```
-
-```
-Please check if the AWS service status page shows any outages right now. If there are any, take a screenshot and tell me which services are affected.
+Navigate to the Google homepage at https://www.google.com
 ```
 
 ```
-Can you login to my GitHub account and check if I have any new notifications? My username is in the password manager.
-```
-
-### API Interactions
-
-```
-Could you check the current weather in Miami by using a weather API?
+Take a screenshot of the current page and name it "google-homepage"
 ```
 
 ```
-Please retrieve my user profile from the API at https://api.example.com/users/me using my authentication token.
+Type "weather forecast" in the search box
 ```
+
+### Simple Interactions
+
+```
+Navigate to https://www.wikipedia.org and search for "Model Context Protocol"
+```
+
+```
+Go to https://the-internet.herokuapp.com/dropdown and select the option "Option 1" from the dropdown
+```
+
+### Basic Form Filling
+
+```
+Navigate to https://the-internet.herokuapp.com/login and fill in the username field with "tomsmith" and the password field with "SuperSecretPassword!"
+```
+
+```
+Go to https://the-internet.herokuapp.com/login, fill in the username and password fields, then click the login button
+```
+
+### Simple JavaScript Execution
+
+```
+Go to https://example.com and execute a JavaScript script to return the page title
+```
+
+```
+Navigate to https://www.google.com and execute a JavaScript script to count the number of links on the page
+```
+
+### Basic API Requests
+
+```
+Perform a GET request to https://jsonplaceholder.typicode.com/todos/1
+```
+
+```
+Make a POST request to https://jsonplaceholder.typicode.com/posts with appropriate JSON data
+```
+
+These examples represent the actual capabilities of the MCP Browser Agent and are more realistic about what it can accomplish in its current state.
 
 ## Troubleshooting
 

@@ -7,7 +7,8 @@ export const BROWSER_TOOLS = [
   "browser_fill",
   "browser_select",
   "browser_hover",
-  "browser_evaluate"
+  "browser_evaluate",
+  "browser_set_viewport"
 ];
 
 export const API_TOOLS = [
@@ -20,6 +21,19 @@ export const API_TOOLS = [
 
 export function registerTools(): Tool[] {
   return [
+    {
+      name: "browser_set_viewport",
+      description: "Change the browser's viewport size and scale factor",
+      inputSchema: {
+        type: "object",
+        properties: {
+          width: { type: "number", description: "Viewport width in pixels" },
+          height: { type: "number", description: "Viewport height in pixels" },
+          deviceScaleFactor: { type: "number", description: "Device scale factor (affects how content is scaled)" }
+        },
+        required: []
+      }
+    },
     {
       name: "browser_navigate",
       description: "Navigate to a specific URL",

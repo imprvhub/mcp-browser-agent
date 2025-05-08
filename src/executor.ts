@@ -11,24 +11,52 @@ const browserLogs: string[] = [];
 const screenshotRegistry = new Map<string, string>();
 const defaultDownloadsPath = path.join(os.homedir(), 'Downloads');
 
-const getBrowserType = (): string => {
+const getConfig = () => {
+  const config = {
+    browserType: 'chrome',
+    viewportWidth: 1280,
+    viewportHeight: 800,
+    deviceScaleFactor: 1.25
+  };
+  
   if (process.env.MCP_BROWSER_TYPE) {
-    return process.env.MCP_BROWSER_TYPE.toLowerCase();
+    config.browserType = process.env.MCP_BROWSER_TYPE.toLowerCase();
+  }
+  
+  if (process.env.MCP_VIEWPORT_WIDTH) {
+    config.viewportWidth = parseInt(process.env.MCP_VIEWPORT_WIDTH, 10);
+  }
+  
+  if (process.env.MCP_VIEWPORT_HEIGHT) {
+    config.viewportHeight = parseInt(process.env.MCP_VIEWPORT_HEIGHT, 10);
+  }
+  
+  if (process.env.MCP_DEVICE_SCALE_FACTOR) {
+    config.deviceScaleFactor = parseFloat(process.env.MCP_DEVICE_SCALE_FACTOR);
   }
   
   try {
     const configPath = path.join(os.homedir(), '.mcp_browser_agent_config.json');
     if (fs.existsSync(configPath)) {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      if (config.browserType) {
-        return config.browserType.toLowerCase();
+      const fileConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      if (fileConfig.browserType && !process.env.MCP_BROWSER_TYPE) {
+        config.browserType = fileConfig.browserType.toLowerCase();
+      }
+      if (fileConfig.viewportWidth && !process.env.MCP_VIEWPORT_WIDTH) {
+        config.viewportWidth = fileConfig.viewportWidth;
+      }
+      if (fileConfig.viewportHeight && !process.env.MCP_VIEWPORT_HEIGHT) {
+        config.viewportHeight = fileConfig.viewportHeight;
+      }
+      if (fileConfig.deviceScaleFactor && !process.env.MCP_DEVICE_SCALE_FACTOR) {
+        config.deviceScaleFactor = fileConfig.deviceScaleFactor;
       }
     }
   } catch (error) {
     console.error('Error reading config file:', error);
   }
   
-  return 'chrome';
+  return config;
 };
 
 export function getBrowserLogs(): string[] {
@@ -64,10 +92,10 @@ async function cleanupBrowser() {
 
 async function initBrowser(): Promise<Page> {
   if (!browser) {
-    const browserType = getBrowserType();
+    const config = getConfig();
     let browserInstance: BrowserType;
     
-    switch (browserType) {
+    switch (config.browserType) {
       case 'firefox':
         browserInstance = firefox;
         break;
@@ -84,12 +112,15 @@ async function initBrowser(): Promise<Page> {
     
     browser = await browserInstance.launch({ 
       headless: false,
-      channel: browserType === 'chrome' ? 'chrome' : undefined
+      channel: config.browserType === 'chrome' ? 'chrome' : undefined
     });
     
     const context = await browser.newContext({
-      viewport: { width: 1920, height: 1080 },
-      deviceScaleFactor: 1,
+      viewport: { 
+        width: config.viewportWidth, 
+        height: config.viewportHeight 
+      },
+      deviceScaleFactor: config.deviceScaleFactor,
     });
 
     page = await context.newPage();
@@ -147,6 +178,9 @@ export async function executeToolCall(
     }
 
     switch (toolName) {
+
+      case "browser_set_viewport":
+        return await handleBrowserSetViewport(activePage!, args);
 
       case "browser_navigate":
         return await handleBrowserNavigate(activePage!, args);
@@ -601,6 +635,67 @@ async function handleApiPatch(client: APIRequestContext, args: any): Promise<{ t
         content: [{
           type: "text",
           text: `PATCH request failed: ${(error as Error).message}`,
+        }],
+        isError: true,
+      },
+    };
+  }
+}
+
+async function handleBrowserSetViewport(page: Page, args: any): Promise<{ toolResult: CallToolResult }> {
+  try {
+    const config = getConfig();
+    
+    // Get current values or use defaults from config
+    const width = args.width || config.viewportWidth;
+    const height = args.height || config.viewportHeight;
+    const deviceScaleFactor = args.deviceScaleFactor || config.deviceScaleFactor;
+    
+    // Set the new viewport size
+    await page.setViewportSize({ width, height });
+    
+    // Save the configuration for future sessions
+    try {
+      const configPath = path.join(os.homedir(), '.mcp_browser_agent_config.json');
+      const config = fs.existsSync(configPath) 
+        ? JSON.parse(fs.readFileSync(configPath, 'utf8')) 
+        : {};
+      
+      if (args.width) {
+        config.viewportWidth = width;
+        process.env.MCP_VIEWPORT_WIDTH = width.toString();
+      }
+      
+      if (args.height) {
+        config.viewportHeight = height;
+        process.env.MCP_VIEWPORT_HEIGHT = height.toString();
+      }
+      
+      if (args.deviceScaleFactor) {
+        config.deviceScaleFactor = deviceScaleFactor;
+        process.env.MCP_DEVICE_SCALE_FACTOR = deviceScaleFactor.toString();
+      }
+      
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    } catch (error) {
+      console.error('Error saving viewport config:', error);
+    }
+    
+    return {
+      toolResult: {
+        content: [{
+          type: "text",
+          text: `Set viewport to width: ${width}, height: ${height}, scale factor: ${deviceScaleFactor}`,
+        }],
+        isError: false,
+      },
+    };
+  } catch (error) {
+    return {
+      toolResult: {
+        content: [{
+          type: "text",
+          text: `Failed to set viewport: ${(error as Error).message}`,
         }],
         isError: true,
       },
