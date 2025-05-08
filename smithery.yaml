@@ -1,0 +1,31 @@
+name: mcp-browser-agent
+displayName: Status Observer MCP
+visibility: public
+type: mcp
+author:
+  name: Iván Luna
+  url: https://github.com/imprvhub
+repository: https://github.com/imprvhub/mcp-browser-agent
+keywords:
+  - status
+  - monitoring
+  - platforms
+  - operational
+files:
+  - README.md
+  - package.json
+  - tsconfig.json
+  - Dockerfile
+  - src/index.ts
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['build/index.js'],
+      env: {}
+    })
+  exampleConfig: {}
