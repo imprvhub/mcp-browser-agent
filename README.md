@@ -39,9 +39,39 @@
 
 <p>
   <a href="https://www.youtube.com/watch?v=0lMsKiTy7TE">
-    <img src="public/assets/preview.png" width="600" alt="Claude Spotify Integration Demo">
+    <img src="public/assets/preview.png" width="600" alt="Browser Agent MCP server demo" />
   </a>
 </p>
+
+<details>
+<summary> Timestamps: </summary>
+
+Click on any timestamp to jump to that section of the video
+
+[**00:00**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=0s) - **Google Search for MCP**  
+Navigation to Google homepage and search for "Model Context Protocol". Demonstration of Claude Desktop using the MCP integration to perform a basic web search and process the results.
+
+[**00:33**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=33s) - **Screenshot Capture**  
+Taking a screenshot of the search results with a custom filename and showcasing it in Finder. Shows how Claude can capture and save visual content from web pages during browser automation.
+
+[**01:00**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=60s) - **Wikipedia Search**  
+Navigation to Wikipedia.org and search for "Model Context Protocol". Illustrates Claude's ability to interact with different websites and their search functionality through the MCP integration.
+
+[**01:38**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=98s) - **Dropdown Menu Interaction I**  
+Navigation to a test website (the-internet.herokuapp.com/dropdown) and selection of "Option 1" from a dropdown menu. Demonstrates Claude's capability to interact with form elements and make selections.
+
+[**01:56**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=116s) - **Dropdown Menu Interaction II**  
+Changing the selection to "Option 2" from the same dropdown menu. Shows Claude's ability to manipulate the same form element multiple times and make different selections.
+
+[**02:09**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=129s) - **Login Form Completion**  
+Navigation to a login page (the-internet.herokuapp.com/login) and filling in the username field with "tomsmith" and password field with "SuperSecretPassword!". Demonstrates form filling automation.
+
+[**02:28**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=148s) - **Login Submission**  
+Submitting the login credentials and completing the authentication process. Shows Claude's ability to trigger form submissions and navigate through multi-step processes.
+
+[**02:36**](https://www.youtube.com/watch?v=0lMsKiTy7TE&t=156s) - **API Request Execution**  
+Performing a GET request to JSONPlaceholder API endpoint. Demonstrates Claude's capability to make direct API calls and process the returned data through the MCP integration.
+</details>
 
 ## Requirements
 
@@ -128,7 +158,10 @@ Edit this file to add the Browser Agent MCP configuration. If the file doesn't e
   "mcpServers": {
     "browserAgent": {
       "command": "node",
-      "args": ["ABSOLUTE_PATH_TO_DIRECTORY/mcp-browser-agent/dist/index.js"]
+      "args": ["ABSOLUTE_PATH_TO_DIRECTORY/mcp-browser-agent/dist/index.js",
+      "--browser",
+      "chrome"
+    ]
     }
   }
 }
@@ -154,8 +187,10 @@ If you already have other MCPs configured, simply add the "browserAgent" section
     "browserAgent": {
       "command": "node",
       "args": [
-        "ABSOLUTE_PATH_TO_DIRECTORY/mcp-browser-agent/dist/index.js"
-      ]
+        "ABSOLUTE_PATH_TO_DIRECTORY/mcp-browser-agent/dist/index.js",
+      "--browser",
+      "chrome"
+    ]
     }
   }
 }
@@ -177,7 +212,7 @@ Create or edit the file `.mcp_browser_agent_config.json` in your home directory:
 
 Supported values for `browserType` are:
 - `chrome` - Uses installed Chrome (default)
-- `firefox` - Uses Firefox
+- `firefox` - Uses Firefox 'Nightly' browser
 - `webkit` - Uses WebKit engine (Note: This is not Safari itself but the WebKit rendering engine that powers Safari)
 - `edge` - Uses Microsoft Edge
 
