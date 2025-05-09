@@ -1,31 +1,99 @@
-name: mcp-browser-agent
-displayName: Status Observer MCP
-visibility: public
-type: mcp
-author:
-  name: Iván Luna
-  url: https://github.com/imprvhub
-repository: https://github.com/imprvhub/mcp-browser-agent
-keywords:
-  - status
-  - monitoring
-  - platforms
-  - operational
-files:
-  - README.md
-  - package.json
-  - tsconfig.json
-  - Dockerfile
-  - src/index.ts
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+name: "@imprvhub/mcp-browser-agent"
+description: "A Model Context Protocol (MCP) integration that provides Claude Desktop with autonomous browser automation capabilities"
+version: "0.7.0"
 startCommand:
   type: stdio
   configSchema:
-    type: object
-    properties: {}
+    type: "object"
+    title: "MCP Browser Agent Configuration"
+    description: "Configuration options for the MCP browser automation agent"
+    properties:
+      browser:
+        type: "object"
+        title: "Browser Configuration"
+        description: "Configuration for the browser automation"
+        properties:
+          type:
+            type: "string"
+            enum: ["chrome", "firefox", "webkit", "edge"]
+            default: "chrome"
+            description: "Browser type to use for automation"
+          viewport:
+            type: "object"
+            properties:
+              width:
+                type: "number"
+                default: 1280
+                minimum: 320
+                maximum: 3840
+                description: "Viewport width in pixels"
+              height:
+                type: "number"
+                default: 800
+                minimum: 240
+                maximum: 2160
+                description: "Viewport height in pixels"
+              deviceScaleFactor:
+                type: "number"
+                default: 1.25
+                minimum: 1
+                maximum: 3
+                description: "Device scale factor (affects how content is scaled)"
+          headless:
+            type: "boolean"
+            default: false
+            description: "Run browser in headless mode (no visible window)"
+      screenshots:
+        type: "object"
+        title: "Screenshot Configuration"
+        description: "Configuration for screenshot captures"
+        properties:
+          savePath:
+            type: "string"
+            default: ""
+            description: "Default path to save screenshots (empty for user's Downloads folder)"
+          format:
+            type: "string"
+            enum: ["png", "jpeg"]
+            default: "png"
+            description: "Screenshot image format"
+      api:
+        type: "object"
+        title: "API Client Configuration"
+        description: "Configuration for API requests"
+        properties:
+          defaultTimeout:
+            type: "number"
+            default: 30000
+            minimum: 1000
+            maximum: 120000
+            description: "Default timeout for API requests in milliseconds"
+          maxRetries:
+            type: "number"
+            default: 3
+            minimum: 0
+            maximum: 5
+            description: "Maximum number of retries for failed API requests"
+    required: []
   commandFunction: |-
     (config) => ({
       command: 'node',
-      args: ['build/index.js'],
-      env: {}
+      args: ['dist/index.js'],
+      env: {
+        NODE_ENV: 'production',
+        MCP_BROWSER_TYPE: config.browser?.type || 'chrome',
+        MCP_VIEWPORT_WIDTH: config.browser?.viewport?.width?.toString() || '1280',
+        MCP_VIEWPORT_HEIGHT: config.browser?.viewport?.height?.toString() || '800',
+        MCP_DEVICE_SCALE_FACTOR: config.browser?.viewport?.deviceScaleFactor?.toString() || '1.25',
+        MCP_BROWSER_HEADLESS: config.browser?.headless?.toString() || 'false',
+        MCP_SCREENSHOT_SAVE_PATH: config.screenshots?.savePath || '',
+        MCP_SCREENSHOT_FORMAT: config.screenshots?.format || 'png',
+        MCP_API_DEFAULT_TIMEOUT: config.api?.defaultTimeout?.toString() || '30000',
+        MCP_API_MAX_RETRIES: config.api?.maxRetries?.toString() || '3'
+      }
     })
-  exampleConfig: {}
+clients:
+  - claude
+  - cursor
+  - typescript
