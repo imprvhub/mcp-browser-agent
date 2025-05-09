@@ -320,19 +320,6 @@ The MCP Browser Agent exposes the following resources:
 - `browser://logs` - Access browser console logs
 - `screenshot://[name]` - Access screenshots by name
 
-## Example Usage
-
-Here are various examples of how to use the MCP Browser Agent with Claude:
-
-I apologize for my mistake. You're right, I should examine the source code to understand what the MCP actually does before suggesting more realistic examples. Let me check the source files in the /src/ directory.
-
-Let me try accessing the repository structure differently:
-
-Let me analyze each of the source files to understand the current capabilities:
-
-Now that I have a better understanding of the actual capabilities, I'll focus specifically on updating the "Example Usage" section of the README to provide more realistic examples that match the current functionality. Based on the source code, the MCP agent can perform basic browser automation tasks and API requests using Playwright, but the examples in the current README seem more advanced than what's actually implemented.
-
-Here's my suggestion for a revised "Example Usage" section:
 
 ## Example Usage
 
@@ -493,3 +480,4 @@ This project is licensed under the Mozilla Public License 2.0 - see the [LICENSE
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [Claude Desktop](https://claude.ai/download)
 - [Playwright Documentation](https://playwright.dev/docs/intro)
+- [MCP Series](https://github.com/mcp-series)
