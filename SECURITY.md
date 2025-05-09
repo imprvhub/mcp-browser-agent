@@ -6,8 +6,8 @@ Only the latest version of the MCP Browser Agent is actively maintained and rece
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
-| < 0.1.0 | :x:                |
+| 0.7.x   | :white_check_mark: |
+| < 0.7.0 | :x:                |
 
 ## Reporting a Vulnerability
 
