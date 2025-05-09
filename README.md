@@ -4,7 +4,7 @@
 
 <table style="border-collapse: collapse; width: 100%; table-layout: fixed;">
 <tr>
-<td style="width: 40%; padding: 15px; vertical-align: middle; border: none;">A powerful Model Context Protocol (MCP) integration that provides Claude Desktop with autonomous browser automation capabilities. This agent enables Claude to interact with web content, manipulate DOM elements, execute JavaScript, and perform API requests through an intuitive interface.</td>
+<td style="width: 40%; padding: 15px; vertical-align: middle; border: none;">A powerful Model Context Protocol (MCP) integration that provides Claude Desktop with autonomous browser automation capabilities.</td>
 <td style="width: 60%; padding: 0; vertical-align: middle; border: none; min-width: 300px; text-align: center;"><a href="https://glama.ai/mcp/servers/@imprvhub/mcp-browser-agent">
   <img style="max-width: 100%; height: auto; min-width: 300px;" src="https://glama.ai/mcp/servers/@imprvhub/mcp-browser-agent/badge" alt="Browser Agent MCP server" />
 </a></td>
