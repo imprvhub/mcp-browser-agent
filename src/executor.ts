@@ -110,9 +110,12 @@ async function initBrowser(): Promise<Page> {
         break;
     }
     
+    // Determine if we're running in a Docker container
+    const isDocker = fs.existsSync('/.dockerenv') || fs.existsSync('/proc/1/cgroup') && fs.readFileSync('/proc/1/cgroup', 'utf8').includes('docker');
+    
     browser = await browserInstance.launch({ 
-      headless: false,
-      channel: config.browserType === 'chrome' ? 'chrome' : undefined
+      headless: isDocker ? true : false,
+      channel: config.browserType === 'chrome' && !isDocker ? 'chrome' : undefined
     });
     
     const context = await browser.newContext({

@@ -1,0 +1,13 @@
+version: '3'
+services:
+  mcp-browser-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - /tmp:/tmp  # For file sharing if needed
+    environment:
+      - MCP_BROWSER_TYPE=chromium  # Use chromium by default
+      - MCP_VIEWPORT_WIDTH=1280
+      - MCP_VIEWPORT_HEIGHT=800
+      - MCP_DEVICE_SCALE_FACTOR=1.25

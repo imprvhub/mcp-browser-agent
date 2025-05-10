@@ -1,5 +1,6 @@
 name: mcp-browser-agent
-displayName: Status Observer MCP
+displayName: Browser Agent MCP
+description: A Model Context Protocol (MCP) integration that provides Claude Desktop with autonomous browser automation capabilities. 
 visibility: public
 type: mcp
 author:
@@ -7,16 +8,19 @@ author:
   url: https://github.com/imprvhub
 repository: https://github.com/imprvhub/mcp-browser-agent
 keywords:
-  - status
-  - monitoring
-  - platforms
-  - operational
+  - browser
+  - agent
+  - orchestration
+  - automation
 files:
   - README.md
   - package.json
   - tsconfig.json
   - Dockerfile
   - src/index.ts
+  - src/tools.ts
+  - src/handlers.ts
+  - src/executor.ts
 startCommand:
   type: stdio
   configSchema:
