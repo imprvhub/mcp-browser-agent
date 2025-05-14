@@ -456,7 +456,7 @@ Tests verify configuration integrity, browser automation features, error handlin
 
 ## Security Considerations
 
-> [!CAUTION]
+> [!IMPORTANT]
 > This MCP integration provides Claude with autonomous browser control capabilities. Please review our [Security Policy](SECURITY.md) for important information about prohibited uses, security implications, and best practices.
 
 The MCP Browser Agent is designed for legitimate automation tasks but could potentially be misused. Users are responsible for ensuring their use complies with all applicable laws, terms of service, and ethical guidelines. See our detailed [Security Policy](SECURITY.md) for more information.
