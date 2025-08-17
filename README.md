@@ -1,5 +1,6 @@
 # MCP Browser Agent
 
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/imprvhub/mcp-browser-agent)](https://archestra.ai/mcp-catalog/imprvhub__mcp-browser-agent)
 [![smithery badge](https://smithery.ai/badge/@imprvhub/mcp-browser-agent)](https://smithery.ai/server/@imprvhub/mcp-browser-agent)
 
 <table style="border-collapse: collapse; width: 100%; table-layout: fixed;">
