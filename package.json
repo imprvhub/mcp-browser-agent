@@ -27,7 +27,7 @@
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.0.3",
+    "@modelcontextprotocol/sdk": "1.24.0",
     "@playwright/browser-chromium": "1.49.1",
     "@playwright/browser-firefox": "1.49.1",
     "@playwright/browser-webkit": "1.49.1",
