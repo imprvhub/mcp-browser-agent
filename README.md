@@ -12,6 +12,10 @@
 </tr>
 </table>
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/imprvhub-mcp-browser-agent).
+
 ## Features
 
 - **Advanced Browser Automation**
