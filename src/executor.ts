@@ -115,7 +115,8 @@ async function initBrowser(): Promise<Page> {
     
     browser = await browserInstance.launch({ 
       headless: isDocker ? true : false,
-      channel: config.browserType === 'chrome' && !isDocker ? 'chrome' : undefined
+      channel: config.browserType === 'chrome' && !isDocker ? 'chrome' : undefined,
+      executablePath: process.env.MCP_BROWSER_EXECUTABLE_PATH || undefined
     });
     
     const context = await browser.newContext({
