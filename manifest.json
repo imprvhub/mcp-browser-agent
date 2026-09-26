@@ -1,0 +1,52 @@
+{
+  "manifest_version": "0.2",
+  "name": "mcp-browser-agent",
+  "display_name": "Browser Agent MCP",
+  "version": "0.9.0",
+  "description": "Let Claude drive a real browser with Playwright and make HTTP API requests.",
+  "long_description": "A Model Context Protocol server for browser automation. Navigate, click, fill and select form fields, hover, run JavaScript in the page, take screenshots, and make GET/POST/PUT/PATCH/DELETE API requests. Uses your installed Google Chrome by default and falls back to Playwright's Chromium when Chrome is absent (install it once with `npx playwright install chromium`). Local file: URLs are refused unless explicitly enabled, since pages the agent visits can carry instructions aimed at the model.",
+  "author": {
+    "name": "Iván Luna",
+    "email": "contact@ivanluna.dev",
+    "url": "https://github.com/imprvhub"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imprvhub/mcp-browser-agent"
+  },
+  "homepage": "https://github.com/imprvhub/mcp-browser-agent",
+  "documentation": "https://github.com/imprvhub/mcp-browser-agent#readme",
+  "license": "MPL-2.0",
+  "keywords": ["browser", "automation", "playwright", "scraping", "testing", "api", "mcp"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "MCP_BROWSER_TYPE": "${user_config.browser_type}",
+        "MCP_BROWSER_HEADLESS": "${user_config.headless}"
+      }
+    }
+  },
+  "user_config": {
+    "browser_type": {
+      "type": "string",
+      "title": "Browser",
+      "description": "chrome (your installed Google Chrome, the default), chromium, firefox, webkit or edge.",
+      "default": "chrome",
+      "required": false
+    },
+    "headless": {
+      "type": "boolean",
+      "title": "Run headless",
+      "description": "Run the browser without a visible window. Off by default so you can watch what the agent does.",
+      "default": false,
+      "required": false
+    }
+  },
+  "compatibility": {
+    "runtimes": { "node": ">=20" }
+  }
+}

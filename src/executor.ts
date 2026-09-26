@@ -11,6 +11,45 @@ const browserLogs: string[] = [];
 const screenshotRegistry = new Map<string, string>();
 const defaultDownloadsPath = path.join(os.homedir(), 'Downloads');
 
+// Both buffers used to grow for the life of the process; a long session with many
+// screenshots held every image in memory as base64.
+const MAX_LOG_LINES = 1000;
+const MAX_SCREENSHOTS = 20;
+// Response bodies and script results go straight into the model's context.
+const MAX_OUTPUT_CHARS = 100_000;
+
+function truncate(text: string): string {
+  if (text.length <= MAX_OUTPUT_CHARS) return text;
+  return `${text.slice(0, MAX_OUTPUT_CHARS)}\n\n[truncated: ${text.length - MAX_OUTPUT_CHARS} more characters]`;
+}
+
+/**
+ * file: URLs are refused unless MCP_BROWSER_ALLOW_FILE_URLS=true. A page the agent
+ * visits can carry instructions for the model; together with browser_evaluate and the
+ * api_* tools, navigating to file:// would let such a page read local files (SSH keys,
+ * credentials) and send them elsewhere.
+ */
+function assertNavigable(url: string) {
+  let scheme: string;
+  try {
+    scheme = new URL(url).protocol;
+  } catch {
+    throw new Error(`Not a valid absolute URL: ${url}`);
+  }
+  const allowFile = /^(1|true|yes)$/i.test(process.env.MCP_BROWSER_ALLOW_FILE_URLS ?? '');
+  if ((scheme === 'file:' || url.toLowerCase().startsWith('view-source:file:')) && !allowFile) {
+    throw new Error(
+      'Navigation to file: URLs is disabled. Set MCP_BROWSER_ALLOW_FILE_URLS=true to allow opening local files.'
+    );
+  }
+}
+
+/** A screenshot name becomes part of a file path, so reduce it to a plain file name. */
+export function safeScreenshotName(name: unknown): string {
+  const base = path.basename(String(name ?? '')).replace(/[^A-Za-z0-9._-]/g, '_').replace(/^\.+/, '');
+  return base.slice(0, 100) || 'screenshot';
+}
+
 const getConfig = () => {
   const config = {
     browserType: 'chrome',
@@ -83,7 +122,8 @@ async function cleanupBrowser() {
       await browser.close();
       browser = null;
       page = null;
-      console.log('Browser instance closed successfully');
+      // stderr: stdout carries the MCP JSON-RPC stream.
+      console.error('Browser instance closed successfully');
     } catch (error) {
       console.error('Error closing browser:', error);
     }
@@ -113,10 +153,19 @@ async function initBrowser(): Promise<Page> {
     // Determine if we're running in a Docker container
     const isDocker = fs.existsSync('/.dockerenv') || fs.existsSync('/proc/1/cgroup') && fs.readFileSync('/proc/1/cgroup', 'utf8').includes('docker');
     
-    browser = await browserInstance.launch({ 
-      headless: isDocker ? true : false,
-      channel: config.browserType === 'chrome' && !isDocker ? 'chrome' : undefined
-    });
+    const headlessOverride = process.env.MCP_BROWSER_HEADLESS;
+    const headless = headlessOverride ? /^(1|true|yes)$/i.test(headlessOverride) : isDocker;
+
+    const channel = config.browserType === 'chrome' && !isDocker ? 'chrome' : undefined;
+    try {
+      browser = await browserInstance.launch({ headless, channel });
+    } catch (error) {
+      if (channel !== 'chrome') throw error;
+      // "chrome" is the default, but it needs Google Chrome installed. Rather than fail
+      // outright, fall back to Playwright's own Chromium build.
+      console.error(`Google Chrome is not available (${(error as Error).message.split('\n')[0]}); falling back to Playwright's Chromium`);
+      browser = await chromium.launch({ headless });
+    }
     
     const context = await browser.newContext({
       viewport: { 
@@ -128,8 +177,10 @@ async function initBrowser(): Promise<Page> {
 
     page = await context.newPage();
     page.on("console", (msg) => {
-      const logEntry = `[${msg.type()}] ${msg.text()}`;
-      browserLogs.push(logEntry);
+      browserLogs.push(`[${msg.type()}] ${msg.text()}`);
+      if (browserLogs.length > MAX_LOG_LINES) {
+        browserLogs.splice(0, browserLogs.length - MAX_LOG_LINES);
+      }
     });
   }
   return page!;
@@ -156,7 +207,7 @@ async function getResponseData(response: any): Promise<TextContent[]> {
   }
   return [{
     type: "text",
-    text: `Response body:\n${responseText}`,
+    text: `Response body:\n${truncate(responseText)}`,
   } as TextContent];
 }
 
@@ -172,6 +223,11 @@ export async function executeToolCall(
     let activePage: Page | null = null;
     let apiClient: APIRequestContext | null = null;
 
+    // Checked before a browser is launched, so a refused URL costs nothing.
+    if (toolName === "browser_navigate") {
+      assertNavigable(String(args.url));
+    }
+
     if (isBrowserTool) {
       activePage = await initBrowser();
     }
@@ -180,6 +236,7 @@ export async function executeToolCall(
       apiClient = await initApiClient(args.url);
     }
 
+    try {
     switch (toolName) {
 
       case "browser_set_viewport":
@@ -231,6 +288,10 @@ export async function executeToolCall(
             isError: true,
           },
         };
+    }
+    } finally {
+      // Each API call opened a request context that was never released.
+      await apiClient?.dispose();
     }
   } catch (error) {
     return {
@@ -305,9 +366,11 @@ async function handleBrowserScreenshot(page: Page, args: any, server: any): Prom
     const screenshot = await page.screenshot(options);
     const base64Screenshot = screenshot.toString('base64');
     const responseContent: (TextContent | ImageContent)[] = [];
-    const savePath = args.savePath || defaultDownloadsPath;
+    const name = safeScreenshotName(args.name);
+    const savePath = path.resolve(args.savePath || defaultDownloadsPath);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `${args.name}-${timestamp}.png`;
+    // args.name went into the path unmodified, so "../" in it wrote outside savePath.
+    const filename = `${name}-${timestamp}.png`;
     const filePath = path.join(savePath, filename);
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
@@ -320,7 +383,11 @@ async function handleBrowserScreenshot(page: Page, args: any, server: any): Prom
       text: `Screenshot saved to: ${filePath}`,
     } as TextContent);
 
-    screenshotRegistry.set(args.name, base64Screenshot);
+    screenshotRegistry.delete(name);
+    screenshotRegistry.set(name, base64Screenshot);
+    while (screenshotRegistry.size > MAX_SCREENSHOTS) {
+      screenshotRegistry.delete(screenshotRegistry.keys().next().value as string);
+    }
     server.notification({
       method: "notifications/resources/list_changed",
     });
@@ -486,7 +553,7 @@ async function handleBrowserEvaluate(page: Page, args: any): Promise<{ toolResul
         content: [
           {
             type: "text",
-            text: `Script result: ${JSON.stringify(result.result, null, 2)}`,
+            text: `Script result: ${truncate(JSON.stringify(result.result, null, 2) ?? 'undefined')}`,
           },
           {
             type: "text",

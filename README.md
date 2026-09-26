@@ -1,7 +1,7 @@
 # MCP Browser Agent
 
 [![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/imprvhub/mcp-browser-agent)](https://archestra.ai/mcp-catalog/imprvhub__mcp-browser-agent)
-[![smithery badge](https://smithery.ai/badge/@imprvhub/mcp-browser-agent)](https://smithery.ai/server/@imprvhub/mcp-browser-agent)
+[![Smithery](https://img.shields.io/badge/Smithery-imprvhub%2Fmcp--browser--agent-8A2BE2)](https://smithery.ai/server/imprvhub/mcp-browser-agent)
 
 <table style="border-collapse: collapse; width: 100%; table-layout: fixed;">
 <tr>
@@ -76,36 +76,50 @@ Performing a GET request to JSONPlaceholder API endpoint. Demonstrates Claude's 
 
 ## Requirements
 
-- Node.js 16 or higher
+- Node.js 20 or higher
 - Claude Desktop
-- Playwright dependencies
+- A browser: Google Chrome, or one of Playwright's builds (see below)
 
 ### Browser Support
 
-```bash
-npm init playwright@latest
-```
-
-This package includes Playwright and the necessary dependencies for running browser automation. When you run `npm install`, the required Playwright dependencies will be installed. The package supports the following browsers:
+The package supports the following browsers:
 
 - Chrome (default)
 - Firefox
 - Microsoft Edge
 - WebKit (Safari engine)
 
-When you first use a browser type, Playwright will automatically install the corresponding browser drivers as needed. You can also install them manually with the following commands:
+**Chrome** (the default) uses your installed Google Chrome. If Chrome is not installed, the
+agent falls back to Playwright's own Chromium build and logs that it did.
 
-```
-npx playwright install chrome
+Playwright's browsers are **not** downloaded on first use — install the ones you want once:
+
+```bash
+npx playwright install chromium   # fallback when Google Chrome is absent
 npx playwright install firefox
 npx playwright install webkit
 npx playwright install msedge
 ```
 
+A clone followed by `npm install` downloads Chromium, Firefox and WebKit automatically through
+the bundled `@playwright/browser-*` packages. Installing from Smithery or an MCPB bundle does
+not, so run the command above for any browser other than Google Chrome.
+
+> **macOS 13 (Ventura):** Playwright is pinned to 1.61, the last release that ships browsers
+> for macOS 13; Playwright 1.62 dropped it. Google Chrome keeps working on any version.
+
 > **Note about Safari**: Playwright doesn't provide direct support for Safari browser. Instead, it uses WebKit, which is the browser engine that powers Safari.
 >
 > **Note about Edge**: When selecting Edge as the browser type, the agent will actually launch Microsoft Edge (not Chromium). Technically, in Playwright, Edge is launched using the Chromium browser instance with the 'msedge' channel parameter because Microsoft Edge is based on Chromium.
 ## Installation
+
+### Installing via Smithery
+
+Install the packaged bundle from the [Smithery server page](https://smithery.ai/server/imprvhub/mcp-browser-agent), or from the CLI:
+
+```bash
+npx -y @smithery/cli@latest mcp add imprvhub/mcp-browser-agent --client claude
+```
 
 ### Installing Manually
 1. Clone or download this repository:
@@ -234,6 +248,15 @@ Set the `MCP_BROWSER_TYPE` environment variable:
 ```
 MCP_BROWSER_TYPE=firefox node dist/index.js
 ```
+
+Other environment variables:
+
+| Variable | Default | Effect |
+|----------|---------|--------|
+| `MCP_BROWSER_HEADLESS` | `false` (`true` inside Docker) | Run without a visible window |
+| `MCP_BROWSER_ALLOW_FILE_URLS` | `false` | Allow `browser_navigate` to open `file:` URLs |
+| `MCP_VIEWPORT_WIDTH` / `MCP_VIEWPORT_HEIGHT` | `1280` / `800` | Viewport size |
+| `MCP_DEVICE_SCALE_FACTOR` | `1.25` | Device pixel ratio |
 
 ### Option 4: Claude Desktop Configuration
 
@@ -396,6 +419,18 @@ If you see the error "MCP Browser Agent: Server disconnected" in Claude Desktop:
    - Double-check that you've used double backslashes (`\\`) for Windows paths
    - Verify you're using the complete path from the root of your filesystem
 
+### Tools return nothing
+
+Versions before 0.9.0 returned every result in a legacy `toolResult` field alongside an empty
+`content` array. Current MCP clients read only `content`, so each tool appeared to succeed
+with no output. Update to 0.9.0 or later.
+
+### Navigation fails with `ERR_NAME_NOT_RESOLVED` while API calls work
+
+Playwright's browser is a separate executable from Node. A per-application firewall such as
+Little Snitch can let Node through while blocking the newly downloaded browser. Allow the
+browser binary under `~/Library/Caches/ms-playwright/` (macOS) in your firewall.
+
 ### Browser not appearing
 If the browser doesn't launch or you don't see it:
 
@@ -445,17 +480,32 @@ npm run watch
 
 ## Testing
 
-The project includes tests to verify core functionality and browser handling.
-
-```
-npm test               # Run tests
-npm run test:watch     # Watch mode
-npm run test:coverage  # Coverage report
+```bash
+npm run build
+npm test
 ```
 
-Tests verify configuration integrity, browser automation features, error handling, and process cleanup. The test suite focuses particularly on ensuring proper handling of browser processes due to known issues with Chrome/Chromium termination.
+The tests start the built server and talk to it over stdio the way an MCP client does. They
+check that tool output arrives where clients read it, that `file:` URLs are refused, and a
+full headless browser session against a local fixture page (navigate, evaluate, fill,
+screenshot). The browser test is skipped when no Playwright browser is installed.
 
 ## Security Considerations
+
+Pages the agent visits can contain text written to steer the model — prompt injection. The
+defaults below narrow what such a page can make the agent do:
+
+- **`file:` URLs are refused** unless `MCP_BROWSER_ALLOW_FILE_URLS=true`. Otherwise a page could
+  have the model open a local file (an SSH key, a credentials file) and pass it to an
+  `api_post` call. The check runs before a browser is launched.
+- **Screenshot names are reduced to a plain file name.** The name used to be joined into the
+  save path unmodified, so `../` in it wrote outside the chosen folder and created any
+  directories along the way.
+- **Output is capped** at 100,000 characters per response body or script result, so one large
+  response cannot flood the conversation.
+
+The `api_*` tools can reach any address the machine can, `localhost` included — intended for
+testing local APIs, but worth knowing when the agent browses untrusted sites.
 
 > [!IMPORTANT]
 > This MCP integration provides Claude with autonomous browser control capabilities. Please review our [Security Policy](SECURITY.md) for important information about prohibited uses, security implications, and best practices.

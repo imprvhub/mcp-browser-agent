@@ -29,6 +29,9 @@ const parseArgs = () => {
     }
   }
   
+  // Only persist when something was passed; this used to rewrite the file on every start.
+  if (!browserType && !viewportWidth && !viewportHeight && !deviceScaleFactor) return;
+
   try {
     const configPath = path.join(os.homedir(), '.mcp_browser_agent_config.json');
     const config = fs.existsSync(configPath) 
@@ -66,7 +69,7 @@ async function startServer() {
   const server = new Server(
     {
       name: "mcp-browser-agent",
-      version: "0.1.0",
+      version: "0.9.0",
     },
     {
       capabilities: {

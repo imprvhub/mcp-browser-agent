@@ -63,10 +63,15 @@ export function setupHandlers(server: Server, tools: Tool[]) {
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    return executeToolCall(
-      request.params.name, 
-      request.params.arguments ?? {}, 
+    // The handler must return the CallToolResult itself. Returning { toolResult } is the
+    // pre-2024-11 compatibility shape: current SDKs answer with an empty `content` array
+    // alongside it, and current clients read only `content`, so every tool call came
+    // back blank.
+    const { toolResult } = await executeToolCall(
+      request.params.name,
+      request.params.arguments ?? {},
       server
     );
+    return toolResult;
   });
 }
