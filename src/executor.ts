@@ -156,9 +156,10 @@ async function initBrowser(): Promise<Page> {
     const headlessOverride = process.env.MCP_BROWSER_HEADLESS;
     const headless = headlessOverride ? /^(1|true|yes)$/i.test(headlessOverride) : isDocker;
 
-    const channel = config.browserType === 'chrome' && !isDocker ? 'chrome' : undefined;
+    const executablePath = process.env.MCP_BROWSER_EXECUTABLE_PATH || undefined;
+    const channel = config.browserType === 'chrome' && !isDocker && !executablePath ? 'chrome' : undefined;
     try {
-      browser = await browserInstance.launch({ headless, channel });
+      browser = await browserInstance.launch({ headless, channel, executablePath });
     } catch (error) {
       if (channel !== 'chrome') throw error;
       // "chrome" is the default, but it needs Google Chrome installed. Rather than fail

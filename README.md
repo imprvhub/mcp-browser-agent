@@ -255,6 +255,7 @@ Other environment variables:
 |----------|---------|--------|
 | `MCP_BROWSER_HEADLESS` | `false` (`true` inside Docker) | Run without a visible window |
 | `MCP_BROWSER_ALLOW_FILE_URLS` | `false` | Allow `browser_navigate` to open `file:` URLs |
+| `MCP_BROWSER_EXECUTABLE_PATH` | unset | Launch a specific browser binary (a system Chromium, a custom Firefox build, ...). It must match the browser type, and it takes precedence over installed Chrome |
 | `MCP_VIEWPORT_WIDTH` / `MCP_VIEWPORT_HEIGHT` | `1280` / `800` | Viewport size |
 | `MCP_DEVICE_SCALE_FACTOR` | `1.25` | Device pixel ratio |
 
