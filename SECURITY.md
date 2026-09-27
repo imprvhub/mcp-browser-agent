@@ -6,15 +6,15 @@ Only the latest version of the MCP Browser Agent is actively maintained and rece
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.9.x   | :white_check_mark: |
-| < 0.9.0 | :x:                |
+| 0.10.x  | :white_check_mark: |
+| < 0.10.0 | :x:               |
 
 ## Reporting a Vulnerability
 
 If you discover a security vulnerability in the MCP Browser Agent, please follow these steps:
 
 1. **Do not disclose the vulnerability publicly** until it has been addressed by the maintainers.
-2. Email the details to [your-email@example.com] with "MCP Browser Agent Security Vulnerability" in the subject line.
+2. Report it privately through GitHub: [open a private security advisory](https://github.com/imprvhub/mcp-browser-agent/security/advisories/new). Only the maintainers can see it.
 3. Include a detailed description of the vulnerability and steps to reproduce it if possible.
 4. You can expect an initial response within 48 hours acknowledging receipt of your report.
 5. We will keep you informed about the progress of addressing the vulnerability.

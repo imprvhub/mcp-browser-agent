@@ -116,21 +116,31 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-async function cleanupBrowser() {
-  if (browser) {
-    try {
-      await browser.close();
-      browser = null;
-      page = null;
-      // stderr: stdout carries the MCP JSON-RPC stream.
-      console.error('Browser instance closed successfully');
-    } catch (error) {
-      console.error('Error closing browser:', error);
-    }
+/** Close the browser if one is open. Safe to call repeatedly or concurrently. */
+export async function cleanupBrowser() {
+  const current = browser;
+  browser = null;
+  page = null;
+  if (!current) return;
+  try {
+    await current.close();
+    // stderr: stdout carries the MCP JSON-RPC stream.
+    console.error('Browser instance closed');
+  } catch (error) {
+    console.error('Error closing browser:', error);
   }
 }
 
+/** Playwright channel for the browsers that are installed apps rather than Playwright builds. */
+const CHANNELS: Record<string, string> = { chrome: 'chrome', edge: 'msedge', msedge: 'msedge' };
+
 async function initBrowser(): Promise<Page> {
+  // The window may have been closed by hand, or the browser may have crashed; start over
+  // rather than failing every later call against a dead instance.
+  if (browser && (!browser.isConnected() || !page || page.isClosed())) {
+    await cleanupBrowser();
+  }
+
   if (!browser) {
     const config = getConfig();
     let browserInstance: BrowserType;
@@ -145,6 +155,8 @@ async function initBrowser(): Promise<Page> {
         break;
       case 'chrome':
       case 'chromium':
+      case 'edge':
+      case 'msedge':
       default:
         browserInstance = chromium;
         break;
@@ -156,17 +168,29 @@ async function initBrowser(): Promise<Page> {
     const headlessOverride = process.env.MCP_BROWSER_HEADLESS;
     const headless = headlessOverride ? /^(1|true|yes)$/i.test(headlessOverride) : isDocker;
 
+    // A specific browser binary, e.g. a system Chromium or Firefox build. It must match the
+    // engine chosen by the browser type, and it takes precedence over any installed channel.
     const executablePath = process.env.MCP_BROWSER_EXECUTABLE_PATH || undefined;
-    const channel = config.browserType === 'chrome' && !isDocker && !executablePath ? 'chrome' : undefined;
+    // "edge" used to launch plain Chromium; it now opens Microsoft Edge as documented.
+    const channel = !isDocker && !executablePath ? CHANNELS[config.browserType] : undefined;
+    let launched: Browser;
     try {
-      browser = await browserInstance.launch({ headless, channel, executablePath });
+      launched = await browserInstance.launch({ headless, channel, executablePath });
     } catch (error) {
-      if (channel !== 'chrome') throw error;
-      // "chrome" is the default, but it needs Google Chrome installed. Rather than fail
+      if (!channel) throw error;
+      // Chrome is the default, but it (like Edge) must be installed. Rather than fail
       // outright, fall back to Playwright's own Chromium build.
-      console.error(`Google Chrome is not available (${(error as Error).message.split('\n')[0]}); falling back to Playwright's Chromium`);
-      browser = await chromium.launch({ headless });
+      console.error(`${channel} is not available (${(error as Error).message.split('\n')[0]}); falling back to Playwright's Chromium`);
+      launched = await chromium.launch({ headless });
     }
+    browser = launched;
+    // Forget a browser that went away (crash, or quit by the user) so the next call relaunches.
+    launched.on('disconnected', () => {
+      if (browser === launched) {
+        browser = null;
+        page = null;
+      }
+    });
     
     const context = await browser.newContext({
       viewport: { 
@@ -177,6 +201,12 @@ async function initBrowser(): Promise<Page> {
     });
 
     page = await context.newPage();
+    // Quitting the window by hand (Cmd+Q, or Quit from the dock) closes the page, but on
+    // macOS the browser process can stay alive under Playwright's control. Closing the
+    // browser from this side makes the process actually exit.
+    page.on('close', () => {
+      if (browser === launched) void cleanupBrowser();
+    });
     page.on("console", (msg) => {
       browserLogs.push(`[${msg.type()}] ${msg.text()}`);
       if (browserLogs.length > MAX_LOG_LINES) {

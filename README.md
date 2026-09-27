@@ -110,7 +110,7 @@ not, so run the command above for any browser other than Google Chrome.
 
 > **Note about Safari**: Playwright doesn't provide direct support for Safari browser. Instead, it uses WebKit, which is the browser engine that powers Safari.
 >
-> **Note about Edge**: When selecting Edge as the browser type, the agent will actually launch Microsoft Edge (not Chromium). Technically, in Playwright, Edge is launched using the Chromium browser instance with the 'msedge' channel parameter because Microsoft Edge is based on Chromium.
+> **Note about Edge**: Selecting `edge` launches your installed Microsoft Edge (before 0.10.0 it silently opened plain Chromium). If Edge is not installed, the agent falls back to Playwright's Chromium. Technically, in Playwright, Edge is launched using the Chromium browser instance with the 'msedge' channel parameter because Microsoft Edge is based on Chromium.
 ## Installation
 
 ### Installing via Smithery
@@ -255,7 +255,7 @@ Other environment variables:
 |----------|---------|--------|
 | `MCP_BROWSER_HEADLESS` | `false` (`true` inside Docker) | Run without a visible window |
 | `MCP_BROWSER_ALLOW_FILE_URLS` | `false` | Allow `browser_navigate` to open `file:` URLs |
-| `MCP_BROWSER_EXECUTABLE_PATH` | unset | Launch a specific browser binary (a system Chromium, a custom Firefox build, ...). It must match the browser type, and it takes precedence over installed Chrome |
+| `MCP_BROWSER_EXECUTABLE_PATH` | unset | Launch a specific browser binary (a system Chromium, a custom Firefox build, ...). It must match the browser type, and it takes precedence over installed Chrome or Edge |
 | `MCP_VIEWPORT_WIDTH` / `MCP_VIEWPORT_HEIGHT` | `1280` / `800` | Viewport size |
 | `MCP_DEVICE_SCALE_FACTOR` | `1.25` | Device pixel ratio |
 
@@ -444,7 +444,15 @@ If the browser doesn't launch or you don't see it:
    - Restart Claude Desktop to establish a fresh connection
 
 ### Browser process not closing properly
-There are known issues with Chromium and Chrome browsers where the process sometimes doesn't terminate properly after use. If you experience this issue:
+Since 0.10.0 the agent handles the two causes seen in practice:
+
+- **The client quits** (you close Claude Desktop): the server now notices its input closing,
+  shuts the browser down and exits. Before, the open browser kept both processes running.
+- **You quit the browser window yourself** (Cmd+Q, or Quit from the dock): on macOS the
+  window closes but Playwright keeps the process alive. The agent now closes the browser from
+  its side when its page closes, and the next tool call starts a fresh one.
+
+If a process still lingers after a crash or a forced kill:
 
 1. **Manually close the browser process**:
    - **Windows**: Press Ctrl+Shift+Esc to open Task Manager, find the Chrome/Chromium process and end it

@@ -1,6 +1,6 @@
 // Drives the built server over stdio the way an MCP client does. Run `npm run build` first.
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -48,7 +48,7 @@ function startServer(env = {}) {
     assert.ok(res.result, `no result for ${name}: ${JSON.stringify(res.error)}`);
     return res.result;
   };
-  return { call, rpc, ready, stop: () => child.kill() };
+  return { call, rpc, ready, child, stop: () => child.kill() };
 }
 
 const textOf = (result) => result.content.filter((c) => c.type === 'text').map((c) => c.text).join('\n');
@@ -134,5 +134,72 @@ test('browser tools work end to end, and screenshot names cannot escape savePath
   } finally {
     server.stop();
     fs.rmSync(outDir, { recursive: true, force: true });
+  }
+});
+
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const isAlive = (pid) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+const childPids = (pid) => {
+  try { return execSync(`pgrep -P ${pid}`).toString().trim().split('\n').filter(Boolean).map(Number); }
+  catch { return []; }
+};
+const noBrowser = (result) => result.isError && /Executable doesn't exist|browserType.launch/i.test(textOf(result));
+
+test('the server exits, taking its browser with it, when the client disconnects', { skip: process.platform === 'win32' }, async (t) => {
+  // Regression: with a browser open, closing stdin left the server and browser running.
+  const server = startServer();
+  const nav = await server.call('browser_navigate', { url: siteUrl });
+  if (noBrowser(nav)) { server.stop(); t.skip('no Playwright browser installed'); return; }
+  const pid = server.child.pid;
+  const browsers = childPids(pid);
+  assert.ok(browsers.length > 0, 'expected a browser process under the server');
+
+  server.child.stdin.end();
+  for (let i = 0; i < 40 && isAlive(pid); i++) await sleep(250);
+  assert.equal(isAlive(pid), false, 'server still running after its client disconnected');
+  for (const b of browsers) assert.equal(isAlive(b), false, `browser process ${b} left behind`);
+});
+
+test('a browser that went away is relaunched on the next call', { skip: process.platform === 'win32' }, async (t) => {
+  const server = startServer();
+  try {
+    const first = await server.call('browser_navigate', { url: siteUrl });
+    if (noBrowser(first)) { t.skip('no Playwright browser installed'); return; }
+    for (const b of childPids(server.child.pid)) process.kill(b, 'SIGKILL');
+    await sleep(500);
+    const again = await server.call('browser_navigate', { url: siteUrl });
+    assert.equal(again.isError, false, textOf(again));
+    const title = await server.call('browser_evaluate', { script: 'document.title' });
+    assert.match(textOf(title), /Fixture Page/);
+  } finally {
+    server.stop();
+  }
+});
+
+test('MCP_BROWSER_EXECUTABLE_PATH selects the browser binary', async (t) => {
+  const missing = startServer({ MCP_BROWSER_EXECUTABLE_PATH: '/nonexistent/browser-binary' });
+  try {
+    const result = await missing.call('browser_navigate', { url: siteUrl });
+    assert.equal(result.isError, true);
+    assert.match(textOf(result), /nonexistent\/browser-binary/);
+  } finally {
+    missing.stop();
+  }
+
+  const cache = path.join(os.homedir(), 'Library/Caches/ms-playwright');
+  const shell = fs.existsSync(cache)
+    ? fs.readdirSync(cache).filter((d) => d.startsWith('chromium_headless_shell'))
+        .flatMap((d) => fs.readdirSync(path.join(cache, d)).map((sub) => path.join(cache, d, sub, 'chrome-headless-shell')))
+        .find((p) => fs.existsSync(p))
+    : undefined;
+  if (!shell) { t.skip('no local Chromium binary to point at'); return; }
+
+  const custom = startServer({ MCP_BROWSER_EXECUTABLE_PATH: shell });
+  try {
+    const nav = await custom.call('browser_navigate', { url: siteUrl });
+    assert.equal(nav.isError, false, textOf(nav));
+  } finally {
+    custom.stop();
   }
 });

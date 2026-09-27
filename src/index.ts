@@ -3,6 +3,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerTools } from "./tools.js";
 import { setupHandlers } from "./handlers.js";
+import { cleanupBrowser } from "./executor.js";
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -69,7 +70,7 @@ async function startServer() {
   const server = new Server(
     {
       name: "mcp-browser-agent",
-      version: "0.9.0",
+      version: "0.10.0",
     },
     {
       capabilities: {
@@ -83,6 +84,19 @@ async function startServer() {
   setupHandlers(server, tools);
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // When the MCP client goes away it closes our stdin, and nothing else ends the process:
+  // the open browser keeps Node's event loop alive, so the server and its browser used to
+  // linger as orphans after the client quit.
+  let shuttingDown = false;
+  const shutdown = async () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    await cleanupBrowser();
+    process.exit(0);
+  };
+  process.stdin.on('end', shutdown);
+  process.stdin.on('close', shutdown);
 }
 
 startServer().catch(error => {
